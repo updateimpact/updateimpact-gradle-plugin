@@ -1,19 +1,10 @@
-buildscript {
-    repositories {
-        mavenLocal()
-        jcenter()
-    }
-    dependencies {
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Double.valueOf(gradle.gradleVersion) > 1.12 ? "+" : "0.5"}"
-    }
-}
-
 apply plugin: 'groovy'
-apply plugin: 'maven-publish'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 group = 'com.updateimpact'
 description = 'Gradle plugin for http://updateimpact.com/'
-version = '0.1.0-SNAPSHOT'
+version = '1.0.0'
 
 repositories {
     mavenLocal()
@@ -43,16 +34,6 @@ task wrapper(type: Wrapper) {
     gradleVersion = '1.12'
 }
 
-publishing {
-    publications {
-        plugin(MavenPublication) {
-            from components.java
-            artifact sourcesJar
-            artifact javadocJar
-        }
-    }
-}
-
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
@@ -66,4 +47,53 @@ task javadocJar(type: Jar, dependsOn: groovydoc) {
 artifacts {
     archives sourcesJar
     archives javadocJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'UpdateImpact Gradle Plugin'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'Gradle plugin for http://updateimpact.com/'
+                url 'https://github.com/updateimpact/updateimpact-gradle-plugin'
+
+                scm {
+                    connection 'scm:git:https://github.com/updateimpact/updateimpact-gradle-plugin'
+                    developerConnection 'scm:git:https://github.com/updateimpact/updateimpact-gradle-plugin'
+                    url 'https://github.com/updateimpact/updateimpact-gradle-plugin'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'szimano'
+                        name 'Tomasz Szymanski'
+                        email 'szimano@szimano.org'
+                    }
+                }
+            }
+        }
+    }
 }
