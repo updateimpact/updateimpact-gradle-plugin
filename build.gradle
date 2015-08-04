@@ -1,0 +1,69 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:${Double.valueOf(gradle.gradleVersion) > 1.12 ? "+" : "0.5"}"
+    }
+}
+
+apply plugin: 'groovy'
+apply plugin: 'maven-publish'
+
+group = 'com.updateimpact'
+description = 'Gradle plugin for http://updateimpact.com/'
+version = '0.1.0-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile gradleApi()
+    compile 'com.updateimpact:updateimpact-plugin-common:1.1.1'
+
+    testCompile 'junit:junit:4.11'
+    testCompile "org.spockframework:spock-core:${getGroovyVersion()}"
+}
+
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
+}
+
+String getGroovyVersion() {
+    return Double.valueOf(gradle.gradleVersion) > 1.12 ? "1.0-groovy-2.3" : "0.7-groovy-1.8"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.12'
+}
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: groovydoc) {
+    classifier = 'javadoc'
+    from groovydoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
