@@ -41,7 +41,7 @@ class UpdateImpactDependencyGraphRenderer {
 
     private void renderChildren(Set<? extends RenderableDependency> children, Set<ComponentIdentifier> visited) {
         for (RenderableDependency child : children) {
-            doRender(child, visited)
+            doRender(child, new HashSet<ComponentIdentifier>(visited))
         }
     }
 

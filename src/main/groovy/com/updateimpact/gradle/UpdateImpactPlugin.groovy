@@ -24,6 +24,7 @@ class UpdateImpactPlugin implements Plugin<Project>{
     void apply(Project project) {
         project.extensions.create(TASK_NAME, UpdateimpactPluginExtension)
         UpdateimpactPluginExtension updateimpactPluginExtension = project.extensions.updateImpactSubmit
+        log.info(System.getProperties().collect{it.key + " = " + it.value}.join("\n"))
         Task createdTask = project.task(TASK_NAME) << { Task task ->
             List<ModuleDependencies> deps = project.configurations.collect { Configuration c ->
                 UpdateImpactDependencyGraphRenderer renderer = new UpdateImpactDependencyGraphRenderer(getDependencyId(project))
