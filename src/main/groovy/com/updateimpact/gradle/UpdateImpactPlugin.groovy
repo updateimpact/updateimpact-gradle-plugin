@@ -71,7 +71,7 @@ class UpdateImpactPlugin implements Plugin<Project>{
                 moduleDependencies,
                 Collections.emptyList(),
                 "1.0",
-                "gradle-plugin-1.1.1"
+                "gradle-plugin-1.1.2"
         )
     }
 
