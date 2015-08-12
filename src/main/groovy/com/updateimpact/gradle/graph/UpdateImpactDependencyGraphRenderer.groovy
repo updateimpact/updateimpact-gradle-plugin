@@ -16,21 +16,20 @@
 
 package com.updateimpact.gradle.graph
 
-import com.updateimpact.report.DependencyChild
 import com.updateimpact.report.DependencyId
 import groovy.transform.Canonical
 import org.gradle.api.artifacts.component.ComponentIdentifier
 import org.gradle.api.tasks.diagnostics.internal.graph.nodes.RenderableDependency
 
 class UpdateImpactDependencyGraphRenderer {
-    private HashMap<DependencyId, List<DependencyChild>> resolvedDependencies = new HashMap<>()
-    private DependencyId currentParent
+    private HashMap<DependencyWithEvicted, List<DependencyId>> resolvedDependencies = new HashMap<>()
+    private DependencyWithEvicted currentParent
 
     private final static String EVICTED_ARROW = " -> "
 
     UpdateImpactDependencyGraphRenderer(DependencyId parent) {
-        this.currentParent = parent
-        this.resolvedDependencies.put(parent, new ArrayList<>())
+        this.currentParent = new DependencyWithEvicted(parent, null)
+        this.resolvedDependencies.put(this.currentParent, new ArrayList<>())
     }
 
     void render(RenderableDependency root) {
@@ -50,12 +49,11 @@ class UpdateImpactDependencyGraphRenderer {
         def alreadyRendered = !visited.add(node.getId())
 
         DependencyWithEvicted dependencyWithEvicted = getDependencyId(node)
-        resolvedDependencies.get(currentParent).add(
-                new DependencyChild(dependencyWithEvicted.dependencyId, dependencyWithEvicted.evicted, alreadyRendered))
+        resolvedDependencies.get(currentParent).add(dependencyWithEvicted.dependencyId)
 
         if (!alreadyRendered) {
-            DependencyId previousParent = currentParent
-            currentParent = getDependencyId(node).dependencyId
+            DependencyWithEvicted previousParent = currentParent
+            currentParent = getDependencyId(node)
             renderChildren(children, visited)
             currentParent = previousParent
         }
@@ -74,13 +72,14 @@ class UpdateImpactDependencyGraphRenderer {
             }
         }
         DependencyId id = new DependencyId(dep[0], dep[1], dep[2], "jar", null)
-        if (!resolvedDependencies.containsKey(id)) {
-            resolvedDependencies.put(id, new ArrayList<DependencyChild>())
+        DependencyWithEvicted idWithEvicted = new DependencyWithEvicted(id, evictedBy)
+        if (!resolvedDependencies.containsKey(idWithEvicted)) {
+            resolvedDependencies.put(idWithEvicted, new ArrayList<DependencyId>())
         }
-        return new DependencyWithEvicted(id, evictedBy)
+        return idWithEvicted
     }
 
-    Map<DependencyId, List<DependencyChild>> getResolvedDependencies() {
+    Map<DependencyWithEvicted, List<DependencyId>> getResolvedDependencies() {
         return resolvedDependencies
     }
 }

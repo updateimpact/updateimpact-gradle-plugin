@@ -1,5 +1,6 @@
 package com.updateimpact.gradle
 
+import com.updateimpact.gradle.graph.DependencyWithEvicted
 import com.updateimpact.gradle.graph.UpdateImpactDependencyGraphRenderer
 
 import com.updateimpact.report.*
@@ -57,9 +58,9 @@ class UpdateImpactPlugin implements Plugin<Project>{
         createdTask.description = 'Analyze your dependencies at http://updateimpact.com'
     }
 
-    private ModuleDependencies toModuleDependencies(DependencyId parent, String config, Map<DependencyId, List<DependencyChild>> deps) {
+    private ModuleDependencies toModuleDependencies(DependencyId parent, String config, Map<DependencyWithEvicted, List<DependencyId>> deps) {
         return new ModuleDependencies(parent, config, deps.collect {
-            Map.Entry<DependencyId, List<DependencyChild>> e -> new Dependency(e.key, e.value)
+            Map.Entry<DependencyWithEvicted, List<DependencyId>> e -> new Dependency(e.key.dependencyId, e.key.evicted, false, e.value)
         })
     }
 
@@ -71,7 +72,7 @@ class UpdateImpactPlugin implements Plugin<Project>{
                 moduleDependencies,
                 Collections.emptyList(),
                 "1.0",
-                "gradle-plugin-1.1.2"
+                "gradle-plugin-1.1.3"
         )
     }
 
