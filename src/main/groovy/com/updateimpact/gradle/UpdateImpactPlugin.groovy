@@ -1,5 +1,6 @@
 package com.updateimpact.gradle
 
+import com.google.gson.Gson
 import com.updateimpact.gradle.graph.DependencyWithEvicted
 import com.updateimpact.gradle.graph.UpdateImpactDependencyGraphRenderer
 
@@ -19,26 +20,18 @@ import java.util.List
 @Slf4j
 class UpdateImpactPlugin implements Plugin<Project>{
 
-    public static final String TASK_NAME = 'updateImpactSubmit'
+    public static final String SUBMIT_TASK_NAME = 'updateImpactSubmit'
+
+    public static final String FILE_TASK_NAME = 'updateImpactToFile'
 
     @Override
     void apply(Project project) {
-        project.extensions.create(TASK_NAME, UpdateimpactPluginExtension)
+        project.extensions.create(SUBMIT_TASK_NAME, UpdateimpactPluginExtension)
         UpdateimpactPluginExtension updateimpactPluginExtension = project.extensions.updateImpactSubmit
         log.info(System.getProperties().collect{it.key + " = " + it.value}.join("\n"))
-        Task createdTask = project.task(TASK_NAME) << { Task task ->
-            List<ModuleDependencies> deps = project.configurations.collect { Configuration c ->
-                UpdateImpactDependencyGraphRenderer renderer = new UpdateImpactDependencyGraphRenderer(getDependencyId(project))
 
-                ResolutionResult result = c.getIncoming().getResolutionResult()
-                RenderableDependency root = new RenderableModuleResult(result.getRoot())
-                renderer.render(root)
-
-                toModuleDependencies(getDependencyId(project), c.name, renderer.getResolvedDependencies())
-            }.findAll {it.dependencies.size() > 1}
-
-
-            DependencyReport report = createDependencyReport(project, updateimpactPluginExtension.apiKey, deps)
+        Task submitTask = project.task(SUBMIT_TASK_NAME) << { Task task ->
+            DependencyReport report = createDependencyReport(project, updateimpactPluginExtension)
 
             SubmitLogger submitLogger = new SubmitLogger() {
                 public void info(String message) { log.info(message); }
@@ -54,8 +47,30 @@ class UpdateImpactPlugin implements Plugin<Project>{
                 }
             }
         }
-        createdTask.group = 'Dependencies'
-        createdTask.description = 'Analyze your dependencies at http://updateimpact.com'
+        submitTask.group = 'Dependencies'
+        submitTask.description = 'Analyze your dependencies at http://updateimpact.com'
+
+        Task createFileTask = project.task(FILE_TASK_NAME) << { Task task ->
+            DependencyReport report = createDependencyReport(project, updateimpactPluginExtension)
+
+            new File('updateimpact.json').withPrintWriter { it.append(new Gson().toJson(report)) }
+        }
+        createFileTask.group = 'Dependencies'
+        createFileTask.description = 'Create updateimpact.json report for http://updateimpact.com [for debugging]'
+    }
+
+    private DependencyReport createDependencyReport(Project project, UpdateimpactPluginExtension updateimpactPluginExtension) {
+        List<ModuleDependencies> deps = project.configurations.collect { Configuration c ->
+            UpdateImpactDependencyGraphRenderer renderer = new UpdateImpactDependencyGraphRenderer(getDependencyId(project))
+
+            ResolutionResult result = c.getIncoming().getResolutionResult()
+            RenderableDependency root = new RenderableModuleResult(result.getRoot())
+            renderer.render(root)
+
+            toModuleDependencies(getDependencyId(project), c.name, renderer.getResolvedDependencies())
+        }.findAll {it.dependencies.size() > 1}
+
+        return createDependencyReport(project, updateimpactPluginExtension.apiKey, deps)
     }
 
     private ModuleDependencies toModuleDependencies(DependencyId parent, String config, Map<DependencyWithEvicted, List<DependencyId>> deps) {
