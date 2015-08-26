@@ -24,6 +24,8 @@ class UpdateImpactPlugin implements Plugin<Project>{
 
     public static final String FILE_TASK_NAME = 'updateImpactToFile'
 
+    private List<String> CONFIGS_TO_SEND = ['compile']
+
     @Override
     void apply(Project project) {
         project.extensions.create(SUBMIT_TASK_NAME, UpdateimpactPluginExtension)
@@ -60,7 +62,9 @@ class UpdateImpactPlugin implements Plugin<Project>{
     }
 
     private DependencyReport createDependencyReport(Project project, UpdateimpactPluginExtension updateimpactPluginExtension) {
-        List<ModuleDependencies> deps = project.configurations.collect { Configuration c ->
+        List<ModuleDependencies> deps = project.configurations
+                .findAll {Configuration c -> CONFIGS_TO_SEND.contains(c.name)}
+                .collect { Configuration c ->
             UpdateImpactDependencyGraphRenderer renderer = new UpdateImpactDependencyGraphRenderer(getDependencyId(project))
 
             ResolutionResult result = c.getIncoming().getResolutionResult()
@@ -73,9 +77,9 @@ class UpdateImpactPlugin implements Plugin<Project>{
         return createDependencyReport(project, updateimpactPluginExtension.apiKey, deps)
     }
 
-    private ModuleDependencies toModuleDependencies(DependencyId parent, String config, Map<DependencyWithEvicted, List<DependencyId>> deps) {
+    private ModuleDependencies toModuleDependencies(DependencyId parent, String config, Map<DependencyWithEvicted, Set<DependencyId>> deps) {
         return new ModuleDependencies(parent, config, deps.collect {
-            Map.Entry<DependencyWithEvicted, List<DependencyId>> e -> new Dependency(e.key.dependencyId, e.key.evicted, false, e.value)
+            Map.Entry<DependencyWithEvicted, List<DependencyId>> e -> new Dependency(e.key.dependencyId, e.key.evicted, false, e.value.toList())
         })
     }
 

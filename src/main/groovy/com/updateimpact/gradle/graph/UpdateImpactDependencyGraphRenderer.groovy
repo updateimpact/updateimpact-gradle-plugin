@@ -22,14 +22,14 @@ import org.gradle.api.artifacts.component.ComponentIdentifier
 import org.gradle.api.tasks.diagnostics.internal.graph.nodes.RenderableDependency
 
 class UpdateImpactDependencyGraphRenderer {
-    private HashMap<DependencyWithEvicted, List<DependencyId>> resolvedDependencies = new HashMap<>()
+    private HashMap<DependencyWithEvicted, Set<DependencyId>> resolvedDependencies = new HashMap<>()
     private DependencyWithEvicted currentParent
 
     private final static String EVICTED_ARROW = " -> "
 
     UpdateImpactDependencyGraphRenderer(DependencyId parent) {
         this.currentParent = new DependencyWithEvicted(parent, null)
-        this.resolvedDependencies.put(this.currentParent, new ArrayList<>())
+        this.resolvedDependencies.put(this.currentParent, new HashSet<DependencyId>())
     }
 
     void render(RenderableDependency root) {
@@ -74,12 +74,12 @@ class UpdateImpactDependencyGraphRenderer {
         DependencyId id = new DependencyId(dep[0], dep[1], dep[2], "jar", null)
         DependencyWithEvicted idWithEvicted = new DependencyWithEvicted(id, evictedBy)
         if (!resolvedDependencies.containsKey(idWithEvicted)) {
-            resolvedDependencies.put(idWithEvicted, new ArrayList<DependencyId>())
+            resolvedDependencies.put(idWithEvicted, new HashSet<DependencyId>())
         }
         return idWithEvicted
     }
 
-    Map<DependencyWithEvicted, List<DependencyId>> getResolvedDependencies() {
+    Map<DependencyWithEvicted, Set<DependencyId>> getResolvedDependencies() {
         return resolvedDependencies
     }
 }
